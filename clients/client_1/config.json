@@ -12,7 +12,7 @@
     {
       "id": "budget",
       "question": "Quel Barre choco préférez-vous ?",
-      "options": ["Twix", "Lyon", "Raider", "Musly", "Nuts"]
+      "options": ["Twix", "Lion", "Raider", "Musly", "Nuts"]
     }
   ]
 }
