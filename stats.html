@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dashboard PRO - Sondages</title>
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{--accent:#2b6cb0;--bg:#f4f6fb;--card:#ffffff}
+    body{font-family:Inter,system-ui,Arial; background:var(--bg); margin:0; padding:20px; color:#1f2937}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+    header h1{margin:0;font-size:20px}
+    .container{max-width:1200px;margin:auto}
+    .auth{margin-left:auto}
+    .controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+    .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 2px 10px rgba(2,6,23,0.06)}
+    .card.small{padding:10px}
+    select,input,button{padding:8px;border-radius:8px;border:1px solid #e2e8f0}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:12px}
+    .charts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .table-wrap{margin-top:12px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #eef2f7;text-align:left}
+    .filters{display:flex;gap:8px;align-items:center}
+    .top-actions{display:flex;gap:8px;align-items:center}
+    .hidden{display:none}
+    .kpi{display:flex;gap:12px}
+    .kpi .item{padding:12px;border-radius:8px;background:linear-gradient(180deg,#fff, #fbfdff);min-width:160px}
+    footer{margin-top:30px;text-align:center;color:#6b7280}
+    @media(max-width:900px){.grid{grid-template-columns:1fr} .charts{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="" id="logo-small" alt="logo" style="height:42px;display:block" />
+      <h1>Dashboard PRO — Sondages</h1>
+      <div class="auth card small" id="auth-card">
+        <div id="auth-area">
+          <button id="btn-signin">Se connecter</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="controls">
+        <div class="filters">
+          <label>Client
+            <select id="client-filter"><option value="">Tous</option></select>
+          </label>
+          <label>Date début <input type="date" id="date-from" /></label>
+          <label>Date fin <input type="date" id="date-to" /></label>
+          <label>Recherche <input id="text-search" placeholder="mot-clé dans 'Autre'..." /></label>
+        </div>
+
+        <div class="top-actions" style="margin-left:auto">
+          <button id="btn-refresh">Rafraîchir</button>
+          <button id="btn-export-csv">Exporter CSV</button>
+          <button id="btn-export-json">Exporter JSON</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div>
+          <div id="kpis" class="kpi"></div>
+
+          <div id="questions-list" class="card" style="margin-top:12px">
+            <h3 style="margin-top:0">Questions</h3>
+            <div id="questions-container">Chargement...</div>
+          </div>
+
+          <div class="table-wrap card" id="responses-table" style="margin-top:12px">
+            <h3 style="margin-top:0">Réponses (brutes)</h3>
+            <div id="table-container">Aucune donnée</div>
+          </div>
+        </div>
+
+        <aside>
+          <div class="card">
+            <h3 style="margin-top:0">Filtres rapides</h3>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button id="filter-last-30">30 derniers jours</button>
+              <button id="filter-last-7">7 derniers jours</button>
+              <button id="filter-today">Aujourd'hui</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:12px">
+            <h3 style="margin-top:0">Sélection question</h3>
+            <select id="question-select"></select>
+            <div style="margin-top:10px">
+              <canvas id="chart-main" height="300"></canvas>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div class="charts card" style="margin-top:12px">
+        <div>
+          <h4 style="margin:6px 0">Graphiques rapides</h4>
+          <canvas id="chart-bar" height="200"></canvas>
+        </div>
+        <div>
+          <h4 style="margin:6px 0">Camembert</h4>
+          <canvas id="chart-pie" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Dashboard PRO — Géré via Supabase. Modifie les paramètres SUPABASE_URL et SUPABASE_ANON dans le script.
+    </footer>
+  </div>
+
+  <script>
+  /******************************************************************
+   * CONFIG — à personnaliser
+   ******************************************************************/ 
+  const SUPABASE_URL = "https://vawvmiosgslvykfqxffs.supabase.co"; // ex: https://xxxxxx.supabase.co
+  const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhd3ZtaW9zZ3NsdnlrZnF4ZmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NjcxNTAsImV4cCI6MjA3OTU0MzE1MH0.T_q5fT1PCOt_pwEFdoKqePFYp7N4IXZSN1XA3HGG5v8"; // clé anon publique
+
+  // Liste d'administrateurs autorisés (emails)
+  const ADMINS = ["admin@example.com"]; // modifie
+
+  // Nombre maximum de réponses à récupérer à la fois (pagination)
+  const PAGE_SIZE = 1000;
+  /******************************************************************/
+
+  if (!SUPABASE_URL || !SUPABASE_ANON) {
+    document.getElementById('auth-area').innerHTML = '<div style="color:#b91c1c">Erreur : définis SUPABASE_URL et SUPABASE_ANON dans le fichier.</div>';
+  }
+
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  // Etat local
+  let allResponses = []; // brut
+  let questionsIndex = []; // unique questions extracted
+  let currentUser = null;
+
+  // UI refs
+  const clientFilter = document.getElementById('client-filter');
+  const dateFrom = document.getElementById('date-from');
+  const dateTo = document.getElementById('date-to');
+  const textSearch = document.getElementById('text-search');
+  const btnRefresh = document.getElementById('btn-refresh');
+  const btnExportCSV = document.getElementById('btn-export-csv');
+  const btnExportJSON = document.getElementById('btn-export-json');
+  const questionsContainer = document.getElementById('questions-container');
+  const questionSelect = document.getElementById('question-select');
+  const chartMainEl = document.getElementById('chart-main');
+  const chartBarEl = document.getElementById('chart-bar');
+  const chartPieEl = document.getElementById('chart-pie');
+  const tableContainer = document.getElementById('table-container');
+  const kpisEl = document.getElementById('kpis');
+
+  let chartMain, chartBar, chartPie;
+
+  // Auth handling (simple email sign in via magic link)
+  async function startAuthUI() {
+    const authArea = document.getElementById('auth-area');
+    authArea.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="auth-email" placeholder="email admin" />
+        <button id="auth-send">Envoyer lien</button>
+        <button id="auth-logout" class="hidden">Déconnexion</button>
+      </div>
+    `;
+    document.getElementById('auth-send').addEventListener('click', async () => {
+      const email = document.getElementById('auth-email').value.trim();
+      if (!email) return alert('Entre ton email');
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) return alert('Erreur: ' + error.message);
+      alert('Lien de connexion envoyé. Vérifie ta boîte mail.');
+    });
+
+    document.getElementById('auth-logout').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      currentUser = null;
+      updateAuthArea();
+    });
+
+    // Écoute changement d'auth
+    supabase.auth.onAuthStateChange((event, session) => {
+      currentUser = session?.user ?? null;
+      updateAuthArea();
+    });
+
+    // check existing session
+    const { data: { session } } = await supabase.auth.getSession();
+    currentUser = session?.user ?? null;
+    updateAuthArea();
+  }
+
+  function updateAuthArea() {
+    const authSend = document.getElementById('auth-send');
+    const authLogout = document.getElementById('auth-logout');
+    const authEmail = document.getElementById('auth-email');
+    if (!currentUser) {
+      // show sign input
+      document.getElementById('auth-send')?.classList.remove('hidden');
+      document.getElementById('auth-logout')?.classList.add('hidden');
+      document.getElementById('auth-email')?.disabled = false;
+    } else {
+      // check admin
+      const email = currentUser.email;
+      const isAdmin = ADMINS.includes(email);
+      document.getElementById('auth-area').innerHTML = `<div>Connecté : ${email} ${isAdmin?'<strong>(admin)</strong>':''} <button id="auth-logout">Déconnexion</button></div>`;
+      document.getElementById('auth-logout').addEventListener('click', async () => {
+        await supabase.auth.signOut(); currentUser = null; startAuthUI();
+      });
+      if (!isAdmin) alert('Ton compte n\'est pas administrateur. Contacte l\'administrateur.');
+    }
+  }
+
+  // Utilities
+  function toISO(d){ if(!d) return null; const dt = new Date(d); return dt.toISOString(); }
+
+  function parseResponses(raw){
+    // raw is array of rows with {id, client, data (jsonb), created_at}
+    const list = raw.map(r => ({...r, parsedData: r.data, created_at: r.created_at}));
+    return list;
+  }
+
+  async function fetchAllResponses() {
+    allResponses = [];
+    let from = 0;
+    while(true){
+      const { data, error } = await supabase.from('responses').select('*').range(from, from + PAGE_SIZE -1).order('created_at', {ascending:false});
+      if (error) { console.error(error); alert('Erreur supabase: '+error.message); break; }
+      if (!data || data.length===0) break;
+      allResponses = allResponses.concat(data);
+      if (data.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
+    allResponses = parseResponses(allResponses);
+    return allResponses;
+  }
+
+  function buildQuestionsIndex(responses){
+    const map = new Map();
+    responses.forEach(r => {
+      const arr = r.parsedData || r.data || [];
+      arr.forEach(q => {
+        const key = q.category_id || q.question;
+        if (!map.has(key)) map.set(key, {category_id:q.category_id, question:q.question, counts:new Map()});
+        const node = map.get(key);
+        (q.choices||[]).forEach(c => node.counts.set(c, (node.counts.get(c)||0)+1));
+        (q.other_values||[]).forEach(o => node.counts.set('Autre', (node.counts.get('Autre')||0)+1));
+      });
+    });
+    const arr = Array.from(map.values());
+    return arr;
+  }
+
+  function populateClientFilter(responses){
+    const clients = Array.from(new Set(responses.map(r=>r.client).filter(Boolean))).sort();
+    clientFilter.innerHTML = '<option value="">Tous</option>' + clients.map(c=>`<option value="${c}">${c}</option>`).join('');
+  }
+
+  function renderKPIs(responses){
+    const total = responses.length;
+    const byClient = {}; responses.forEach(r=> byClient[r.client]= (byClient[r.client]||0)+1);
+    kpisEl.innerHTML = `<div class="item">Total réponses<br><strong>${total}</strong></div>` + Object.keys(byClient).slice(0,3).map(c=>`<div class="item">${c}<br><strong>${byClient[c]}</strong></div>`).join('');
+  }
+
+  function renderQuestionsList(index){
+    const container = document.getElementById('questions-container');
+    container.innerHTML = '';
+    questionSelect.innerHTML = '';
+    index.forEach((q,i)=>{
+      const div = document.createElement('div');
+      div.style.padding='8px 0';
+      div.innerHTML = `<strong>${q.question}</strong> <div style="font-size:13px;color:#475569">${Array.from(q.counts.entries()).map(([k,v])=>`${k}: ${v}`).join(' • ')}</div>`;
+      container.appendChild(div);
+      const opt = document.createElement('option'); opt.value = i; opt.text = q.question; questionSelect.appendChild(opt);
+    });
+  }
+
+  function buildTableHTML(responses){
+    if(!responses.length) return '<div>Aucune donnée</div>';
+    const rows = responses.map(r=>{
+      return `<tr><td>${r.id}</td><td>${r.client||''}</td><td>${new Date(r.created_at).toLocaleString()}</td><td><pre style="white-space:pre-wrap">${JSON.stringify(r.parsedData||r.data, null, 2)}</pre></td></tr>`;
+    }).join('');
+    return `<table><thead><tr><th>ID</th><th>Client</th><th>Date</th><th>Data</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  function renderChartsForQuestion(index, idx){
+    const q = index[idx];
+    const labels = Array.from(q.counts.keys());
+    const values = Array.from(q.counts.values());
+
+    if(chartMain) chartMain.destroy();
+    chartMain = new Chart(chartMainEl.getContext('2d'),{type:'bar',data:{labels, datasets:[{label:q.question, data:values}]}, options:{responsive:true}});
+    if(chartBar) chartBar.destroy();
+    chartBar = new Chart(chartBarEl.getContext('2d'),{type:'bar',data:{labels, datasets:[{label:'Comptes', data:values}]}});
+    if(chartPie) chartPie.destroy();
+    chartPie = new Chart(chartPieEl.getContext('2d'),{type:'pie',data:{labels, datasets:[{data:values}]}});
+  }
+
+  // Filtering pipeline
+  function applyFilters(raw){
+    let list = raw.slice();
+    const client = clientFilter.value;
+    if(client) list = list.filter(r=>r.client===client);
+    const from = dateFrom.value ? new Date(dateFrom.value+'T00:00:00') : null;
+    const to = dateTo.value ? new Date(dateTo.value+'T23:59:59') : null;
+    if(from) list = list.filter(r=> new Date(r.created_at) >= from);
+    if(to) list = list.filter(r=> new Date(r.created_at) <= to);
+    const txt = textSearch.value.trim().toLowerCase();
+    if(txt) list = list.filter(r=> JSON.stringify(r.parsedData||r.data).toLowerCase().includes(txt));
+    return list;
+  }
+
+  // Exports
+  function exportCSV(rows){
+    // flatten to lines: id,client,created_at,category_id,question,choices,other_values
+    const lines = ['id,client,created_at,category_id,question,choices,other_values'];
+    rows.forEach(r=>{
+      const arr = r.parsedData || r.data || [];
+      arr.forEach(q=>{
+        const line = [r.id, (r.client||''), r.created_at, q.category_id||'', '"'+(q.question||'')+'"', '"'+(q.choices||[]).join('|')+'"', '"'+(q.other_values||[]).join('|')+'"'].map(v=>String(v).replace(/\n/g,' ')).join(',');
+        lines.push(line);
+      });
+    });
+    const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `sondages_export_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+  }
+
+  function exportJSON(rows){
+    const blob = new Blob([JSON.stringify(rows, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `sondages_export_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+  }
+
+  // Orchestrator
+  async function refreshData(){
+    document.getElementById('questions-container').innerText = 'Chargement...';
+    const raw = await fetchAllResponses();
+    populateClientFilter(raw);
+    const filtered = applyFilters(raw);
+    renderKPIs(filtered);
+    const ix = buildQuestionsIndex(filtered);
+    questionsIndex = ix;
+    renderQuestionsList(ix);
+    tableContainer.innerHTML = buildTableHTML(filtered);
+    if(ix.length) renderChartsForQuestion(ix, 0);
+  }
+
+  // Events
+  btnRefresh.addEventListener('click', refreshData);
+  btnExportCSV.addEventListener('click', ()=>{
+    const filtered = applyFilters(allResponses);
+    exportCSV(filtered);
+  });
+  btnExportJSON.addEventListener('click', ()=>{
+    const filtered = applyFilters(allResponses);
+    exportJSON(filtered);
+  });
+
+  clientFilter.addEventListener('change', ()=> refreshData());
+  dateFrom.addEventListener('change', ()=> refreshData());
+  dateTo.addEventListener('change', ()=> refreshData());
+  textSearch.addEventListener('input', ()=> refreshData());
+
+  questionSelect.addEventListener('change', ()=>{
+    const idx = Number(questionSelect.value);
+    if(!isNaN(idx)) renderChartsForQuestion(questionsIndex, idx);
+  });
+
+  document.getElementById('filter-last-30').addEventListener('click', ()=>{
+    const to = new Date(); const from = new Date(); from.setDate(to.getDate()-30);
+    dateFrom.value = from.toISOString().slice(0,10); dateTo.value = to.toISOString().slice(0,10); refreshData();
+  });
+  document.getElementById('filter-last-7').addEventListener('click', ()=>{
+    const to = new Date(); const from = new Date(); from.setDate(to.getDate()-7);
+    dateFrom.value = from.toISOString().slice(0,10); dateTo.value = to.toISOString().slice(0,10); refreshData();
+  });
+  document.getElementById('filter-today').addEventListener('click', ()=>{
+    const to = new Date(); const from = new Date(); dateFrom.value = to.toISOString().slice(0,10); dateTo.value = to.toISOString().slice(0,10); refreshData();
+  });
+
+  // Init
+  (async function(){
+    await startAuthUI();
+    // if admin auto-load data
+    await refreshData();
+  })();
+  </script>
+</body>
+</html>
