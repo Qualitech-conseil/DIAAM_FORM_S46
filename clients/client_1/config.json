@@ -11,7 +11,7 @@
     },
     {
       "id": "budget",
-      "question": "Quel est votre budget moyen ?",
+      "question": "Quel Barre choco préférez-vous ?",
       "options": ["Twix", "Lyon", "Raider", "Musly", "Nuts"]
     }
   ]
