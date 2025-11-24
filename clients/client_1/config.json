@@ -1,0 +1,18 @@
+{
+  "clientName": "Client1",
+  "title": "Sondage choix distributeur1_S46",
+  "logo": "https://exemple.com/logo.png",
+  "color": "#e63946",
+  "categories": [
+    {
+      "id": "Boisson",
+      "question": "Quel Boisson préférez-vous ?",
+      "options": ["Coca", "Coca_Light", "Orangina", "IceTea", "Autre"]
+    },
+    {
+      "id": "budget",
+      "question": "Quel est votre budget moyen ?",
+      "options": ["Twix", "Lyon", "Raider", "Musly", "Nuts"]
+    }
+  ]
+}
