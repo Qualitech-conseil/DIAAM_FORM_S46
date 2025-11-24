@@ -1,6 +1,42 @@
 {
-  "clientName": "Client1",
+  "clientId": "client_1",
   "title": "Sondage choix distributeur1_S46",
+  "logo": "assets/logos/client_1.png",
+  "color": "#e63946",
+  "categories": {
+    "Boissons": [
+      "Café",
+      "Thé",
+      "Jus",
+      "Soda",
+      "Eau",
+      "Smoothie",
+      "Milkshake",
+      "Énergisant",
+      "Infusion",
+      "Chocolat chaud"
+    ],
+    "Pâtisseries": [
+      "Croissant",
+      "Pain au chocolat",
+      "Brioche",
+      "Tartelette",
+      "Muffin",
+      "Macaron",
+      "Cookie",
+      "Éclair",
+      "Chou à la crème",
+      "Gâteau du jour"
+    ]
+  }
+}
+
+
+
+
+{
+  "clientName": "Client1",
+
   "logo": "https://exemple.com/logo.png",
   "color": "#e63946",
   "categories": [
