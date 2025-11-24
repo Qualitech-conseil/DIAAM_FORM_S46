@@ -54,7 +54,7 @@
                     const line = document.createElement("div");
                     line.innerHTML = `
                         <label>
-                            <input type="radio" name="${cat.id}" value="${opt}" /> ${opt}
+                            <input type=\"checkbox\" name="${cat.id}" value="${opt}" /> ${opt}
                         </label>
                     `;
                     block.appendChild(line);
@@ -63,7 +63,7 @@
                 const other = document.createElement("div");
                 other.innerHTML = `
                     <label>
-                        <input type="radio" name="${cat.id}" value="Autre" /> Autre
+                        <input type=\"checkbox\" name="${cat.id}" value="Autre" /> Autre
                     </label>
                     <input type="text" id="other-${cat.id}" placeholder="Précisez" style="display:none;margin-left:10px;" />
                 `;
@@ -73,13 +73,9 @@
                 form.appendChild(block);
 
                 form.addEventListener("change", e => {
-                    if (e.target.name === cat.id) {
+                    if (e.target.name === cat.id && e.target.value === "Autre") {
                         const otherInput = document.getElementById(`other-${cat.id}`);
-                        if (e.target.value === "Autre") {
-                            otherInput.style.display = "inline-block";
-                        } else {
-                            otherInput.style.display = "none";
-                        }
+                        otherInput.style.display = e.target.checked ? "inline-block" : "none";
                     }
                 });
             });
@@ -103,15 +99,20 @@
                 entries.push({ key, value, other });
             }
 
-            for (let e of entries) {
-                await supabaseClient.from("responses").insert({
-                    client: clientId,
-                    category_id: e.key,
-                    question: document.querySelector(`input[name='${e.key}']`).closest("div").querySelector("h3").innerText,
-                    choice: e.value,
-                    other_value: e.other
-                });
-            }
+            const grouped = config.categories.map(cat => {
+                const selected = entries.filter(e => e.key === cat.id);
+                return {
+                    category_id: cat.id,
+                    question: cat.question,
+                    choices: selected.map(s => s.value),
+                    other_values: selected.filter(s => s.other).map(s => s.other)
+                };
+            });
+
+            await supabaseClient.from("responses").insert({
+                client: clientId,
+                data: grouped
+            });
 
             status.innerText = "Merci, vos réponses ont été enregistrées.";
             document.getElementById("submit-btn").disabled = true;
