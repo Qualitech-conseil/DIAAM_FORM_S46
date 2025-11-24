@@ -6,12 +6,12 @@
   "categories": [
     {
       "id": "Boisson",
-      "question": "Quel Boisson préférez-vous ?",
+      "question": "Quelle Boisson préférez-vous ?",
       "options": ["Coca", "Coca_Light", "Orangina", "IceTea", "Autre"]
     },
     {
       "id": "budget",
-      "question": "Quel Barre choco préférez-vous ?",
+      "question": "Quelle Barre choco préférez-vous ?",
       "options": ["Twix", "Lion", "Raider", "Musly", "Nuts"]
     }
   ]
