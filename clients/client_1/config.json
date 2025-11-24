@@ -1,18 +1,16 @@
 {
-  "clientName": "Client1",
-"title": "Sondage choix distributeur1_S46",
-  "logo": "https://exemple.com/logo.png",
-  "color": "#e63946",
+  "clientName": "Restaurant du Port",
+  "title": "Sondage satisfaction",
   "categories": [
     {
-      "id": "Boisson",
-      "question": "Quelle Boisson préférez-vous ?",
-      "options": ["Coca", "Coca_Light", "Orangina", "IceTea", "Autre"]
+      "id": "plats",
+      "question": "Quel type de plat préférez-vous ?",
+      "options": ["Poisson", "Viande", "Végétarien", "Burger", "Pizza"]
     },
     {
       "id": "budget",
-      "question": "Quelle Barre choco préférez-vous ?",
-      "options": ["Twix", "Lion", "Raider", "Musly", "Nuts"]
+      "question": "Votre budget moyen ?",
+      "options": ["< 10€", "10-15€", "15-20€", "20-30€", "30€+"]
     }
   ]
 }
