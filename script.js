@@ -1,6 +1,6 @@
 // URL et clé Supabase (à remplir)
 const SUPABASE_URL = "https://vawvmiosgslvykfqxffs.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhd3ZtaW9zZ3NsdnlrZnF4ZmZzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5NjcxNTAsImV4cCI6MjA3OTU0MzE1MH0.T_q5fT1PCOt_pwEFdoKqePFYp7N4IXZSN1XA3HGG5v8";
+const SUPABASE_ANON = "sb_publishable_A59tt4-xaFE_at6NLXprqA_oz3Xushc";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
