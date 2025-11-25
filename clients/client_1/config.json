@@ -3,14 +3,14 @@
   "title": "Sondage satisfaction",
   "categories": [
     {
-      "id": "plats",
-      "question": "Quel type de plat préférez-vous ?",
-      "options": ["Poisson", "Viande", "Végétarien", "Burger", "Pizza"]
+      "id": "Boisson",
+      "question": "Quelle boisson préférez-vous ?",
+      "options": ["Coca", "Coca Light", "Orangina", "IceTea", "Jus Abricot"]
     },
     {
-      "id": "budget",
-      "question": "Votre budget moyen ?",
-      "options": ["< 10€", "10-15€", "15-20€", "20-30€", "30€+"]
+      "id": "Barre Choco",
+      "question": "Quelle Barre Choco préférez-vous ?",
+      "options": ["Lion", "Raider", "Nuts", "Mars", "Musly"]
     }
   ]
 }
